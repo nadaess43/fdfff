@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Учись: Картография и геоинформатика — читай и проверяй</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--txt:#222;--acc:#2e7d32}
+body.dark{--bg:#121212;--card:#1e1e1e;--txt:#eee;--acc:#66bb6a}
+body{font-family:Arial,sans-serif;max-width:1000px;margin:0 auto;padding:12px;background:var(--bg);color:var(--txt)}
+#top{position:sticky;top:0;background:var(--card);border-radius:10px;padding:10px;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+#bar{height:10px;background:#ccc;border-radius:5px;overflow:hidden}#bar div{height:100%;width:0;background:var(--acc)}
+.layout{display:flex;gap:12px}nav{width:220px;flex-shrink:0;position:sticky;top:110px;align-self:flex-start;background:var(--card);border-radius:10px;padding:10px;max-height:75vh;overflow:auto}
+nav a{display:block;padding:6px 8px;border-radius:6px;text-decoration:none;color:var(--txt);font-size:14px}
+nav a.done{background:#d7f0d8}body.dark nav a.done{background:#2e4d2e}
+main{flex:1;min-width:0}
+.card{background:var(--card);border-radius:10px;padding:14px;margin:10px 0;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.read{border-left:4px solid var(--acc);padding-left:10px}
+.key{background:#fff8e1;border-radius:8px;padding:8px;margin:8px 0;color:#333}
+body.dark .key{background:#3a3000;color:#ffe}
+.q label{display:block;padding:6px;border:1px solid #bbb;border-radius:8px;margin:4px 0;cursor:pointer}
+.q label.ok{background:#d7f0d8;border-color:var(--acc)}
+.q label.bad{background:#ffd9d9;border-color:#c00}
+textarea{width:100%;min-height:60px;border-radius:8px;border:1px solid #aaa;padding:8px;box-sizing:border-box;background:var(--card);color:var(--txt)}
+button{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:8px 14px;margin:4px 4px 4px 0;cursor:pointer}
+button.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+.ans{display:none;background:#e8f5e9;border-radius:8px;padding:8px;margin-top:6px;color:#222}
+.hid{filter:blur(5px);cursor:pointer}.hid.open{filter:none}
+canvas{border:1px solid #888;border-radius:8px;background:#fff;width:100%}
+@media(max-width:700px){.layout{flex-direction:column}nav{width:auto;position:static;max-height:none}}
+</style>
+</head>
+<body>
+<div id="top">
+<b>Картография и геоинформатика — учи по науке</b>
+<div style="font-size:13px">Читай короткий кусок → сразу вспоминай (не подглядывая) → проверь → иди дальше. Прогресс сохраняется.</div>
+<div id="bar"><div></div></div>
+<div style="font-size:13px">Прогресс: <span id="prog">0/8</span> | Баллы quiz: <span id="score">0</span> | <span id="timer">00:00</span>
+<button class="ghost" onclick="toggleDark()">Ночь</button>
+<button class="ghost" onclick="resetAll()">Сброс</button>
+<button class="ghost" onclick="startMixed()">Финальный перемешанный тест</button></div>
+<input id="search" placeholder="Поиск: анаморфоза, ГИС, изолинии..." style="width:100%;padding:6px;border-radius:8px;border:1px solid #aaa" oninput="doSearch(this.value)">
+</div>
+<div class="layout">
+<nav id="nav"></nav>
+<main id="main"></main>
+</div>
+<div class="card"><h3>План повторов (интервалы — так забудешь меньше)</h3>
+<label><input type="checkbox" id="r1"> Завтра — пройти все quiz заново</label><br>
+<label><input type="checkbox" id="r3"> Через 3 дня — финальный перемешанный</label><br>
+<label><input type="checkbox" id="r7"> Через неделю — только ошибки</label></div>
+<script>
+const S=[
+{id:"s1",t:"1. Зачем карта вообще",read:"Главная мысль раздела: данные надо показать. Картографический метод = добывать новое знание из карты, а не просто смотреть. Вегенер сложил берега и придумал дрейф материков. Кристаллер померил города и придумал центральные места. Баранский: карта — начало и конец географии, второй язык. Алаев короче: географично то, что картируется.",key:"Вегенер — дрейф. Кристаллер/Лёш — центральные места. Баранский — 6 пунктов. Алаев — 1 фраза. Этапы: подготовил → анализ → обобщение → прогноз.",quiz:[
+{q:"Кто сказал «географично то, что картируется»?",o:["Баранский","Алаев","Салищев","Шокальский"],c:1,e:"Алаев — коротко. Баранский — длинно про альфа и омега."},
+{q:"Вегенер использовал карту для:",o:["центральных мест","дрейфа материков","ГИС","гистограмм"],c:1,e:"Сложил берега — дрейф."},
+{q:"Этапы исследования по порядку:",o:["прогноз-анализ-подготовка","подготовка-анализ-обобщение-прогноз","обобщение-подготовка-прогноз"],c:1,e:"Всегда одна цепочка."}]},
+{id:"s2",t:"2. 7 приёмов — что делать с картой",read:"Инструкция что делать: 1) посмотреть глазами, 2) померить (картометрия — главное), 3) построить профиль, 4) сравнить цифры, 5) сменить проекцию, 6) сгладить шум, 7) оцифровать. Путь: от крупных полевых к мелким общим, от одной отрасли ко всей экономике.",key:"Визуальный, картометрия, графический (профиль), статистический (связи), проекции, математический (сгладить), авто (оцифровать).",quiz:[
+{q:"Измерить площадь озера — это:",o:["визуальный","картометрия","смена проекций","авто"],c:1,e:"Картометрия — расстояния и площади."},
+{q:"Построить разрез рельефа — это:",o:["графический","статистический","математический"],c:0,e:"Графический = профили."},
+{q:"Убрать фон и оставить аномалии — это:",o:["визуальный","математический","авто"],c:1,e:"Математический — сгладить."}]},
+{id:"s3",t:"3. Карта vs фото",read:"Карта — умная модель, а не фото. 4 главных свойства: есть проекция (шар→плоскость), есть знаки (язык), есть отбор (не всё, а главное — генерализация), есть система (связи). Снимок — копия как есть. Карта показывает невидимое: дно океана, магнитные аномалии, рождаемость, устойчивость к грязи. Формула: снимок = факты, карта = факты + смысл.",key:"Проекция, знаковость, генерализация (отбор), системность. + наглядность, метричность (можно мерить).",quiz:[
+{q:"Отбор и обобщение — это:",o:["генерализация","метричность","знаковость"],c:0,e:"Генерализация = не всё показываем."},
+{q:"Что покажет карта, а снимок нет?",o:["крыши домов","магнитные аномалии","цвет машин"],c:1,e:"Невидимое и абстракции — только карта."},
+{q:"Сфера в плоскость — это свойство:",o:["знаковость","математический закон","системность"],c:1,e:"Проекция."}]},
+{id:"s4",t:"4. Хитрые карты: вес, упрощение, память",read:"Анаморфоза: размер = цифре (Китай огромный, Россия маленькая). По Тикунову — население и 2050. Картоид: типа карта, но без проекции и масштаба, как схема метро — Киев-Новгород, Австралия. Менталка Бьюзена: центр-тема, ветки-бранчи по 1 слову, цвета, картинки. Реки Африки — 6 веток: Нил, Нигер, Конго, Замбези, Лимпопо, Оранжевая.",key:"Анаморфоза=вес. Картоид=упрощение. Менталка=запоминание. Правила: 1 слово/ветвь, горизонтально, длина=слову, цвета, мельче от центра, картинка в центре.",quiz:[
+{q:"Масштаб плавает от населения — это:",o:["картоид","анаморфоза","менталка"],c:1,e:"Анаморфоза."},
+{q:"Схема без проекции как метро — это:",o:["картоид","анаморфоза","гистограмма"],c:0,e:"Картоид."},
+{q:"Менталки придумал:",o:["Тьюки","Бьюзен","Бертен"],c:1,e:"Бьюзен, 1 слово на ветвь."}]},
+{id:"s5",t:"5. ГИС и таблицы",read:"Данных много → ГИС (ящик: получить, хранить, выдать географию). Виды: общие и спец (кадастр, карты, управление, вода), охват: место→регион→страна→мир. GRID — мировой банк природы ООН. ШГИС — школьная простая. Э-карты СНГ — первая половина 90-х. Конгресс 1996 — главная дорога. ГБД — аккуратная таблица в компе. Excel — книга из листов, считает и рисует. Задания: база СНГ и материка (страна, столица, население, площадь + правление).",key:"ГИС: получить-хранить-выдать. GRID — мир. ШГИС — школа. 90-е — э-карты. 1996 — конгресс. Excel поля помнишь?",quiz:[
+{q:"ГИС — это:",o:["игра","комплекс для геоданных","редактор фото"],c:1,e:"Получить, хранить, выдать."},
+{q:"GRID — это:",o:["школьная ГИС","банк природы ООН","таблица Excel"],c:1,e:"Глобальный пример."},
+{q:"Э-карты СНГ:",o:["70-е","первая половина 90-х","2000-е"],c:1,e:"Мечта — одна модель Земли."}]},
+{id:"s6",t:"6. Визуализация: показать чтобы понять",read:"Показать так, чтобы мозгу легко. К середине XIX придумали столбики, круги, гистограммы, линии, ряды. Взрыв в 3-й четверти XX: Тьюки (копаться в данных), Бертен (язык графики), комп+мышь+плоттер. Две работы: показать готовое (доклад) и найти новое (закономерность). Инфографика — сложно, но понятно всем.",key:"XIX — все типы. Тьюки, Бертен, техника. Презентация (показать) vs исследование (найти).",quiz:[
+{q:"К середине XIX уже было:",o:["ничего","столбики, круги, гистограммы","только ГИС"],c:1,e:"Всё главное уже придумали."},
+{q:"Показать вывод доклада — это:",o:["презентационная","исследовательская"],c:0,e:"А найти закономерность — исследовательская."},
+{q:"Тьюки дал:",o:["разведочный анализ","проекцию","Excel"],c:0,e:"Копаться в данных."}]},
+{id:"s7",t:"7. Заливка vs кружки",read:"Картограмма: залил районы по цифре, интервалы (до 20, 20-30, выше 30). Фоновая — заливка для относительного (опустынивание). Точечная — точки с цифрой для абсолютного (уголь). Картодиаграмма: кружки/квадраты/шары размером = сумме (люди, ВВП, сток). Где завод — НЕ узнаешь, только страну сравнить. Изолинии: isol=равный. Техника: изучил → поставил не закрывая столицы → легенда с единицей (1мм2=...).",key:"Заливка=распределение. Кружки=сумма. Фон vs точки. Легенда с единицей. isol — равный.",quiz:[
+{q:"Опустынивание по областям — чем?",o:["фоновой картограммой","картодиаграммой"],c:0,e:"Распределение — заливка."},
+{q:"Население стран сравнить — чем?",o:["картограммой","картодиаграммой"],c:1,e:"Сумма — кружки."},
+{q:"По картодиаграмме можно узнать где завод?",o:["да точно","нет, только район"],c:1,e:"Главная ловушка."}]},
+{id:"s8",t:"8. Своя карта: чем рисовать и подписывать",read:"Обычная — где что (Google). Тематическая — одна тема + цифры (сколько людей в городе). Показываем размером, цветом, формой. Религию залить нельзя — не измерить. Растр = точки (Photoshop, GIMP — жрут память). Вектор = линии формулами (Illustrator, Inkscape бесплатный — тянется). Гибрид: RasterDesk. Школьнику хватит бесплатного. Подписи: вода голубым курсивом, площади прописными по центру, разница 2 кегля, не меньше 6-7 бумага / 9-10 экран, не вверх ногами, максимум 1+1 шрифт. 3 способа: руками в Paint, конструктор с диска, ГИС (готовая/своя база, ШГИС).",key:"Растр — точки, вектор — линии. Вода — курсив. 6-7 / 9-10. 3 способа: руки, конструктор, ГИС.",quiz:[
+{q:"Бесплатный векторный для всех:",o:["Photoshop","Inkscape","Paint"],c:1,e:"Inkscape."},
+{q:"Вода подписывается:",o:["черным прямым","голубым курсивом","красным"],c:1,e:"Запомни цветом."},
+{q:"Самый простой школьный способ:",o:["вручную на контур","только ГИС"],c:0,e:"Paint + контур."}]},
+];
+let score=0;const done=new Set();
+function render(){
+let nav="",main="";
+S.forEach((s,i)=>{
+nav+=`<a href="#${s.id}" id="n${s.id}">${s.t}</a>`;
+main+=`<div class="card" id="${s.id}"><h2>${s.t}</h2>
+<div class="read"><b>Прочитай (1 мин):</b> ${s.read}</div>
+<div class="key"><b>Ключевое:</b> ${s.key}</div>
+<b>Вспомни сейчас (закрой текст!):</b>`;
+s.quiz.forEach((q,qi)=>{
+main+=`<div class="q" id="q${i}_${qi}"><p>${q.q}</p>`+q.o.map((o,oi)=>`<label><input type="radio" name="q${i}_${qi}" value="${oi}"> ${o}</label>`).join("")+`<button onclick="checkQ(${i},${qi})">Проверить</button> <span id="e${i}_${qi}" class="ans"></span></div>`;
+});
+main+=`<b>Блёрт:</b> напиши всё что помнишь без подглядывания:<textarea id="b${i}" placeholder="Пиши по памяти..."></textarea>
+<button class="ghost" onclick="document.getElementById('a${i}').style.display='block'">Показать текст и сверить</button>
+<div class="ans" id="a${i}">${s.read}<br><b>${s.key}</b></div>
+<b>Фейнман:</b> объясни тему вслух как другу за 30 сек. Понял? <label><input type="checkbox" onchange="markDone('${s.id}',this.checked)"> Раздел усвоен</label>
+<div><b>Нарисуй схему:</b></div><canvas id="cv${i}" height="140" onmousedown="st(event,'cv${i}')" onmousemove="mv(event,'cv${i}')" onmouseup="sp()" onmouseleave="sp()"></canvas> <button class="ghost" onclick="cl('cv${i}')">Стереть</button></div>`;
+});
+main+=`<div class="card" id="mixed"><h2>Финал: перемешанный тест (как на СОЧ)</h2><p>Вопросы из разных тем вперемешку — так учит interleaving.</p><button onclick="startMixed()">Начать 10 случайных</button><div id="mixbox"></div></div>`;
+document.getElementById("nav").innerHTML=nav;
+document.getElementById("main").innerHTML=main;
+load();
+}
+let dr=false;
+function st(e,id){dr=true}function mv(e,id){if(!dr)return;let c=document.getElementById(id);let x=c.getContext("2d");let r=c.getBoundingClientRect();x.fillRect(e.clientX-r.left,e.clientY-r.top,2,2)}function sp(){dr=false}function cl(id){let c=document.getElementById(id);c.getContext("2d").clearRect(0,0,c.width,c.height)}
+function checkQ(i,qi){
+let s=document.querySelector(`input[name=q${i}_${qi}]:checked`);if(!s)return;
+let q=S[i].quiz[qi];let labels=document.querySelectorAll(`#q${i}_${qi} label`);
+labels.forEach((l,li)=>{l.classList.remove("ok","bad");if(li==q.c)l.classList.add("ok")});
+let e=document.getElementById(`e${i}_${qi}`);e.style.display="block";
+if(parseInt(s.value)==q.c){e.textContent="Верно. "+q.e;score++;}else{e.textContent="Мимо. "+q.e;labels[parseInt(s.value)].classList.add("bad")}
+document.getElementById("score").textContent=score;save();
+}
+function markDone(id,v){if(v)done.add(id);else done.delete(id);document.getElementById("n"+id).classList.toggle("done",v);document.getElementById("prog").textContent=done.size+"/8";document.querySelector("#bar div").style.width=(done.size/8*100)+"%";save()}
+function startMixed(){
+let all=[];S.forEach((s,i)=>s.quiz.forEach((q,qi)=>all.push([i,qi])));
+all=all.sort(()=>Math.random()-.5).slice(0,10);
+let h="";all.forEach(([i,qi],k)=>{let q=S[i].quiz[qi];h+=`<div class="q" id="m${k}"><p>${k+1}. [${S[i].t}] ${q.q}</p>`+q.o.map((o,oi)=>`<label><input type="radio" name="m${k}" value="${oi}"> ${o}</label>`).join("")+`</div>`});
+h+=`<button onclick="checkMixed(${JSON.stringify(all).replace(/"/g,"'")})">Проверить финал</button><div id="mres"></div>`;
+document.getElementById("mixbox").innerHTML=h;location.hash="#mixed";
+}
+function checkMixed(all){let s=0;all.forEach(([i,qi],k)=>{let q=S[i].quiz[qi];let sel=document.querySelector(`input[name=m${k}]:checked`);let labels=document.querySelectorAll(`#m${k} label`);labels.forEach((l,li)=>{l.classList.remove("ok","bad");if(li==q.c)l.classList.add("ok")});if(sel&&parseInt(sel.value)==q.c)s++;else if(sel)labels[parseInt(sel.value)].classList.add("bad")});document.getElementById("mres").innerHTML=`<b>Финал: ${s}/10. 9+ отлично, 7+ хорошо, 5+ зачёт, меньше — повтори несданные разделы.</b>`}
+function toggleDark(){document.body.classList.toggle("dark")}
+function doSearch(v){v=v.toLowerCase();document.querySelectorAll("main .card").forEach(c=>{c.style.display=c.textContent.toLowerCase().includes(v)?"":"none"})}
+function save(){localStorage.setItem("uchi",JSON.stringify({score,done:[...done],r1:document.getElementById("r1").checked,r3:document.getElementById("r3").checked,r7:document.getElementById("r7").checked}))}
+function load(){try{let o=JSON.parse(localStorage.getItem("uchi"));if(!o)return;score=o.score||0;document.getElementById("score").textContent=score;(o.done||[]).forEach(d=>{done.add(d);let n=document.getElementById("n"+d);if(n)n.classList.add("done")});document.getElementById("prog").textContent=done.size+"/8";document.querySelector("#bar div").style.width=(done.size/8*100)+"%";["r1","r3","r7"].forEach(k=>{if(o[k])document.getElementById(k).checked=true})}catch(e){}}
+function resetAll(){localStorage.removeItem("uchi");location.reload()}
+let sec=0;setInterval(()=>{sec++;document.getElementById("timer").textContent=String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")},1000);
+render();
+</script>
+</body>
+</html>
