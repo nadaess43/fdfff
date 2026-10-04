@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>География 50 заданий — Картография и геоинформатика (СОР/СОЧ)</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:900px;margin:0 auto;padding:16px;background:#f4f6f8;color:#222}
+h1{font-size:22px}h2{background:#2e7d32;color:#fff;padding:8px;border-radius:8px;font-size:18px}
+.card{background:#fff;border-radius:10px;padding:12px;margin:10px 0;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+button{background:#2e7d32;color:#fff;border:0;border-radius:8px;padding:8px 14px;margin:6px 4px 6px 0;cursor:pointer}
+button.ghost{background:#fff;color:#2e7d32;border:1px solid #2e7d32}
+button:hover{opacity:.9}
+.opts label{display:block;padding:6px;border:1px solid #ddd;border-radius:8px;margin:4px 0;cursor:pointer}
+.opts label.correct{background:#d7f0d8;border-color:#2e7d32}
+.opts label.wrong{background:#ffd9d9;border-color:#c00}
+textarea{width:100%;min-height:80px;border-radius:8px;border:1px solid #ccc;padding:8px;box-sizing:border-box}
+.hint{display:none;background:#fff8e1;border:1px dashed #a80;padding:8px;border-radius:8px;margin-top:6px;white-space:pre-wrap}
+canvas{border:1px solid #888;border-radius:8px;background:#fff;width:100%;touch-action:none}
+.toolbar button{padding:4px 10px}
+#topbar{position:sticky;top:0;background:#fff;border-radius:10px;padding:10px;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:10}
+#progress{height:10px;background:#ddd;border-radius:5px;overflow:hidden}#progress div{height:100%;width:0;background:#2e7d32}
+.small{font-size:13px;color:#555}
+</style>
+</head>
+<body>
+<div id="topbar">
+<h1>Картография и геоинформатика — 50 заданий (СОР/СОЧ)</h1>
+<div class="small">Часть A — авто-проверка (20×1б). B — короткие (15×2б, самопроверка). C — практика (15×~3.5б). Всего ~100б. Прогресс сохраняется в браузере.</div>
+<div id="progress"><div></div></div>
+<div><b>Баллы A: <span id="scoreA">0</span>/20</b> | Выполнено B+C: <span id="doneBC">0</span>/30 | <span id="timer">00:00</span></div>
+<div>
+<button onclick="checkA()">Проверить часть A</button>
+<button class="ghost" onclick="showAllHints()">Показать все ориентиры</button>
+<button class="ghost" onclick="resetAll()">Сбросить</button>
+<button class="ghost" onclick="window.print()">Печать</button>
+</div>
+</div>
+
+<h2>Часть A. Тесты (выбери один)</h2>
+<div id="partA"></div>
+
+<h2>Часть B. Короткие вопросы (напиши + сверься)</h2>
+<div id="partB"></div>
+
+<h2>Часть C. Практика: нарисуй, проанализируй, Excel (36–50)</h2>
+<div id="partC"></div>
+
+<div class="card"><button onclick="finish()">Завершить и показать итог</button><div id="final"></div></div>
+
+<script>
+const A=[
+["«Географично то, что картируется» — кто?",["Баранский","Алаев","Салищев","Шокальский","Семенов-Тян-Шанский"],1,"Алаев. Баранский — про альфа и омега."],
+["«Карта — язык географии» — кто?",["Бехайм","Баранский","Бьюзен","Тьюки","Бертен"],1,"Баранский."],
+["«Карта — альфа и омега географии» — чье?",["Алаева","Баранского","Вегенера","Кристаллера","Тилло"],1,"Баранский, 6 пунктов."],
+["Масштаб варьирует от показателя (населения):",["общегеографическая","топографическая","анаморфированная","фоновая картограмма","изолиний"],2,"Анаморфоза: размер=населению, 2050 по Тикунову."],
+["«Подобный карте», без проекции:",["картоид","анаморфоза","картодиаграмма","гистограмма","изолиния"],0,"Картоид: упрощенно, спрямление."],
+["Ментальные карты описал:",["Тьюки","Бертен","Тони Бьюзен","Тикунов","Бехайм"],2,"Бьюзен, >50 лет."],
+["Измерение расстояний/площадей:",["визуальный","картометрия","графический","смена проекций","авто"],1,"Картометрия."],
+["Построение профилей:",["статистический","графический","математический","визуальный","авто"],1,"Графический анализ."],
+["Разложить в ряды, сгладить:",["математический","статистический","графический","картометрия","визуальный"],0,"Математический."],
+["Сфера→плоскость через проекцию:",["знаковость","математический закон","генерализованность","системность","наглядность"],1,"Мат.закон."],
+["Отбор и обобщение:",["генерализованность","метричность","непрерывность","обзорность","абстрактность"],0,"Генерализованность."],
+["ГИС — это:",["географическая информационная система","глобальная сеть","графический интерфейс","инспекция съемки","стандарт"],0,"Комплекс получения/хранения/выдачи."],
+["Глобальная ГИС из учебника:",["Google Maps","GRID ЮНЕП","Excel","Paint","AutoCAD"],1,"GRID — банк данных ресурсов."],
+["Электрокарты СНГ:",["70-е","первая половина 90-х","2000-е","XIX в.","2019"],1,"Тогда же задача единой модели Земли."],
+["Линии равных значений:",["изолинии","бранчи","хороплет","фича","легенда"],0,"isol — равный."],
+["Лишний термин:",["горизонталь","изотерма","изолиния","бранч","изобара"],3,"Бранч — ветвь менталки."],
+["Растровый:",["Photoshop","Illustrator","CorelDraw","Inkscape","Spotlight"],0,"Photoshop, GIMP, Krita, Paint.NET."],
+["Векторный бесплатный для всех ОС:",["Paint","GIMP","Inkscape","Photoshop","PhotoFiltre"],2,"Inkscape. Corel/Illustrator платные."],
+["Гибридный:",["RasterDesk для AutoCAD","Krita","Paint.NET","Excel","Word"],0,"+ Spotlight."],
+["Вода подписывается:",["черным прямым","голубым курсивом","красным жирным","прописными","вверх ногами"],1,"Площадные — прописными с разрядкой, мин. 6-7pt бумага."],
+];
+const B=[
+"21. 6 значений карты по Баранскому. Почему №5 «второй язык»?|Альфа и омега; белые пятна; закономерности; посредник человек–Земля; второй язык (знаки как язык); критерий географичности. Язык — т.к. знаками передает то, что словами долго.",
+"22. 4 ученых XIX-нач.XX + Вегенер, Кристаллер/Лёш.|Тилло, Семенов-Тян-Шанский, Анучин, Шокальский. Вегенер — плиты/дрейф. Кристаллер/Лёш — центральные места через картометрию.",
+"23. Применение по отраслям + 4 этапа.|Физ: ландшафты, геоморфология. Эконом: количества, факторы, динамика, прогноз. Страноведение: портрет территории. Этапы: подготовка, анализ, обобщение, прогноз.",
+"24. 7 приемов Салищева + пример.|Визуальный, картометрия, графический (профиль), статистический (связи), смена проекций, математический (сглаживание), авто. Пример: измерить площадь озера — картометрия.",
+"25. 10 свойств + снимок vs карта.|Абстрактность, избирательность, синтетичность, метричность, однозначность, непрерывность, наглядность, обзорность, подобие, соответствие. Снимок — факты как есть. Карта — + абстракции: дно океана, аномалии, рождаемость.",
+"26. Картометрия широко.|Чтение + использование для информации, обобщения, анализа, кол/кач оценки. Измерения не только по топо, но и по тематическим.",
+"27. Анаморфоза vs картоид.|Анаморфоза: масштаб плавает, цель — показать вес показателя (население 2050). Картоид: без проекции/масштаба, упрощение (Киев-Новгород, Австралия), память/типология.",
+"28. Определения 4 терминов.|Геоинформатика — наука о методах получения/хранения/обработки геоинформации. Метод — создание/обновление способов. ГИС — комплекс средств. ГБД — структурированные данные для ЭВМ.",
+"29. Виды ГИС.|По цели: многоцелевые + спец (научные, кадастровые, картографические, инженерные, управленческие). По охвату: локал/регион/гос/глобал. ШГИС — спец учебная. GRID — глобал.",
+"30. Эволюция до ГИС + 1996.|Перфокарты → банки данных → ГИС-технологии → цифра/текст/графика/карты. 1996 конгресс — магистраль НТР, ~30 э-атласов.",
+"31. Визуализация + 2 функции.|Представление для эффективной работы, алгоритмически. Презентационная — показать вывод. Исследовательская — найти закономерности.",
+"32. История.|К сер.XIX: столбчатые, круговые, гистограммы, линейные, временные ряды, контурные. Виток: Тьюки — разведочный анализ; Бертен — семиология; плоттеры/мышь/планшет.",
+"33. Картограмма vs картодиаграмма.|Грамма — относительные, распределение (опустынивание). Диаграмма — суммарные (ВВП, население, сток), фигуры. Точное место завода — нет, только район. Виды: фон/точки; сравнения/перемещения/изолиний.",
+"34. Тематическая vs физическая.|Физ — где что (рельеф, Google). Темат — одна тема + данные (население города). Переменные: размер, цвет, форма. Религия — номинальная, не упорядочить для площадной.",
+"35. Растр vs вектор.|Растр — пиксели, много памяти (Photoshop/GIMP). Вектор — формулы линий (Illustrator/Corel/Inkscape). Примитивы: эллипс, квадрат, прямоугольник, ромб, линия. Школе — бесплатный, не Photoshop.",
+];
+const C=[
+"36. Менталка «ТЭК мира»: центр, 4-5 бранчей, 1 слово/ветвь, цвета, печатно, рисунки.|Нарисуй на холсте ниже, затем отметь чек: горизонтально, длина=слову, размер по близости, равномерно.",
+"37. Картоид двух городов как Киев-Новгород.|Упрости, спрями, подпиши веер путей и зоны. Объясни что убрал (проекцию/масштаб).",
+"38. Анаморфозы населения + эссе 80-100 слов.|Кто biggest? Подбери 3 цифры численности. Эссе: «увидеть другими глазами».",
+"39. Контурная Сев.Америки: 3 реки, 2 озера, 2 хребта, 2 океана + ресурсы + добыча. Вывод: рельеф↔размещение↔население США/Канады.|Используй атлас.",
+"40. Рис.29-30: тип, шкала до 20/20-30/выше 30 ц/га, легенда.|Фоновая vs точечная, когда применять.",
+"41. Картодиаграмма населения (РК 19, Узб 35, ФРГ 84 млн): круги по размеру, не закрывать столицы, легенда «1мм2=…». Вывод.|Можно на холсте-схеме.",
+"42. Гистограмма по Рис.32-33: X-интервалы, Y-число, нормальное, двумерная. Зачем переменные интервалы.|В Excel или от руки, фото сюда.",
+"43. Excel ГБД «СНГ»: страна, столица, население, площадь, экономика (5+). Диаграмма. Вывод.|Опиши шаги, прикрепи файл/скрин.",
+"44. Excel ГБД «Политкарта материка»: + правление/устройство/режим. Вывод о режимах.|5 стран.",
+"45. В редакторе «Осадки Австралии» как Рис.34 (2400-0мм): цвета, типографика (вода курсивом). Растр/вектор — почему.|Paint/GIMP/Inkscape.",
+"46. Найди 5 ошибок типографики и исправь.|Перевернута, <6pt, два sans, вплотную сверху, культура=физика одним шрифтом.",
+"47. 3 метода школьных карт + ШГИС + проект.|Ручной в редакторе / конструктор / ГИС с базой. Внеурочный проект.",
+"48. 2 афоризма + Гейтс/Джобс.|«Градусная сеть — улицы шара», «Глобус Бехайма», «Карта-язык». Технологии — инструмент? Аргумент.",
+"49. Кейс опустынивания: грамма или диаграмма? Фон/точки? Шкала, легенда, что скроет.|Обоснуй.",
+"50. Снимок vs топокарта vs анаморфоза: факты/абстракции, прогноз vs портрет. Вывод 5-6 предл.|Комплексный.",
+];
+function el(id){return document.getElementById(id)}
+function render(){
+let h="";
+A.forEach((a,i)=>{
+h+=`<div class="card" id="a${i}"><b>${a[0]}</b><div class="opts">`+a[1].map((o,j)=>`<label><input type="radio" name="a${i}" value="${j}"> ${"абвгд"[j]}) ${o}</label>`).join("")+`</div><div class="hint" id="ha${i}">${a[3]}</div><button class="ghost" onclick="document.getElementById('ha${i}').style.display='block'">Подсказка</button></div>`;
+});
+el("partA").innerHTML=h;
+h="";
+B.forEach((b,i)=>{
+let p=b.split("|");
+h+=`<div class="card"><b>${p[0]}</b><textarea id="b${i}" placeholder="Твой ответ..."></textarea><label><input type="checkbox" id="c${i}"> считаю выполненным</label> <button class="ghost" onclick="document.getElementById('hb${i}').style.display='block'">Ориентир</button><div class="hint" id="hb${i}">${p[1]}</div></div>`;
+});
+el("partB").innerHTML=h;
+h="";
+C.forEach((c,i)=>{
+let p=c.split("|");let n=36+i;
+let draw=(n==36||n==37||n==41||n==45)?`<div class="toolbar"><button onclick="clearC('cv${i}')">Очистить</button> <input type="color" id="col${i}" value="#000000"></div><canvas id="cv${i}" height="220" onmousedown="startD(event,'cv${i}')" onmousemove="moveD(event,'cv${i}')" onmouseup="stopD()" onmouseleave="stopD()" ontouchstart="startD(event,'cv${i}')" ontouchmove="moveD(event,'cv${i}')" ontouchend="stopD()"></canvas>`:"";
+h+=`<div class="card"><b>${n}. ${p[0]}</b><div class="small">${p[1]}</div>${draw}<textarea id="t${i}" placeholder="Анализ / вывод / шаги..."></textarea><label><input type="checkbox" id="d${i}"> выполнено</label> <label>Файл: <input type="file" id="f${i}"></label></div>`;
+});
+el("partC").innerHTML=h;
+load();
+}
+let drawing=false,last=null;
+function pos(e,cv){let r=cv.getBoundingClientRect();let t=e.touches?e.touches[0]:e;return[(t.clientX-r.left)*(cv.width/r.width),(t.clientY-r.top)*(cv.height/r.height)]}
+function startD(e,id){drawing=true;let cv=el(id);let ctx=cv.getContext("2d");if(cv.width<500){cv.width=600;cv.height=220}let p=pos(e,cv);last=p;ctx.strokeStyle=el("col"+id.slice(2)).value;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p[0],p[1]);e.preventDefault()}
+function moveD(e,id){if(!drawing)return;let cv=el(id);let ctx=cv.getContext("2d");let p=pos(e,cv);ctx.lineTo(p[0],p[1]);ctx.stroke();e.preventDefault()}
+function stopD(){drawing=false}
+function clearC(id){let cv=el(id);cv.getContext("2d").clearRect(0,0,cv.width,cv.height)}
+function checkA(){
+let s=0;
+A.forEach((a,i)=>{
+let sel=document.querySelector(`input[name=a${i}]:checked`);
+let labels=document.querySelectorAll(`#a${i} .opts label`);
+labels.forEach((l,j)=>{l.classList.remove("correct","wrong");if(j==a[2])l.classList.add("correct")});
+if(sel){if(parseInt(sel.value)==a[2])s++;else{labels[parseInt(sel.value)].classList.add("wrong")}}
+});
+el("scoreA").textContent=s;save();update();return s;
+}
+function update(){
+let d=0;for(let i=0;i<15;i++){if(el("c"+i)&&el("c"+i).checked)d++;if(el("d"+i)&&el("d"+i).checked)d++}
+el("doneBC").textContent=d+"/30";
+let w=(parseInt(el("scoreA").textContent)+d)/50*100;
+document.querySelector("#progress div").style.width=w+"%";
+}
+function showAllHints(){document.querySelectorAll(".hint").forEach(h=>h.style.display="block")}
+function save(){
+let o={a:[],b:[],c:[],t:[],cb:[],db:[]};
+for(let i=0;i<20;i++){let s=document.querySelector(`input[name=a${i}]:checked`);o.a.push(s?s.value:null)}
+for(let i=0;i<15;i++){o.b.push(el("b"+i).value);o.t.push(el("t"+i).value);o.cb.push(el("c"+i).checked);o.db.push(el("d"+i).checked)}
+localStorage.setItem("geo50",JSON.stringify(o));
+}
+function load(){
+try{let o=JSON.parse(localStorage.getItem("geo50"));if(!o)return;
+o.a.forEach((v,i)=>{if(v!==null){let r=document.querySelector(`input[name=a${i}][value="${v}"]`);if(r)r.checked=true}});
+o.b.forEach((v,i)=>{if(el("b"+i))el("b"+i).value=v||""});
+o.t.forEach((v,i)=>{if(el("t"+i))el("t"+i).value=v||""});
+o.cb.forEach((v,i)=>{if(el("c"+i))el("c"+i).checked=v});
+o.db.forEach((v,i)=>{if(el("d"+i))el("d"+i).checked=v});
+}catch(e){}
+}
+function resetAll(){localStorage.removeItem("geo50");location.reload()}
+function finish(){
+let s=checkA();update();
+let d=el("doneBC").textContent;
+el("final").innerHTML=`<b>Итог: A=${s}/20, B+C выполнено ${d}. Ориентир: 85+ отлично, 65+ хорошо, 50+ зачет СОР, <50 повтори раздел.</b><div class=small>Практику C (рисунки/Excel) покажи учителю: холсты можно сохранить скриншотом, файлы прикреплены выше.</div>`;
+window.scrollTo(0,document.body.scrollHeight);
+}
+setInterval(()=>{document.querySelectorAll("textarea").forEach(()=>{});},5000);
+document.addEventListener("change",()=>{save();update()});
+let sec=0;setInterval(()=>{sec++;let m=String(Math.floor(sec/60)).padStart(2,"0");let s=String(sec%60).padStart(2,"0");el("timer").textContent=m+":"+s},1000);
+render();update();
+</script>
+</body>
+</html>
