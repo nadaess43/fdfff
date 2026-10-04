@@ -24,7 +24,7 @@ button.ghost{background:#fff;color:#2e7d32;border:1px solid #2e7d32}
 <b>Тест по ВСЕМУ разделу: выбери ВСЕ верные</b>
 <div class="small">55 вопросов: метод, 7 приёмов, 10 свойств, хитрые карты, ГИС, Excel, визуализация, заливка/кружки, редакторы, подписи, способы. Зелёный — верно, красный — лишнее, пунктир — пропустил.</div>
 <div id="bar"><div></div></div>
-<div>Счёт: <span id="score">0</span> | Проверено: <span id="done">0/55</span> | <span id="timer">00:00</span>
+<div>Счёт: <span id="score">0</span> | Проверено: <span id="done">0/57</span> | <span id="timer">00:00</span>
 <button class="ghost" onclick="shuffle()">Перемешать</button>
 <button class="ghost" onclick="retryWrong()">Только ошибки</button>
 <button class="ghost" onclick="resetAll()">Сброс</button></div>
@@ -118,7 +118,7 @@ document.getElementById("done").textContent=checked.size+"/"+order.length;
 document.querySelector("#bar div").style.width=(checked.size/order.length*100)+"%";
 save();
 }
-function checkAll(){order.forEach((qi,k)=>{if(!checked.has(k))checkOne(k,qi)});let f=document.getElementById("final");f.innerHTML=`<b>Итог: ${score}/${order.length}. 48+ отлично, 40+ хорошо, 32+ зачёт, меньше — жми «Только ошибки».</b>`}
+function checkAll(){order.forEach((qi,k)=>{if(!checked.has(k))checkOne(k,qi)});let f=document.getElementById("final");f.innerHTML=`<b>Итог: ${score}/${order.length}. 50+ отлично, 42+ хорошо, 34+ зачёт, меньше — жми «Только ошибки».</b>`}
 function shuffle(){order=order.sort(()=>Math.random()-.5);checked.clear();score=0;document.getElementById("score").textContent=0;render()}
 function retryWrong(){let wrong=order.filter((qi,k)=>!checked.has(k));if(!wrong.length){alert("Ошибок нет!");return}order=wrong;checked.clear();score=0;document.getElementById("score").textContent=0;render()}
 function resetAll(){localStorage.removeItem("multitest55");location.reload()}
